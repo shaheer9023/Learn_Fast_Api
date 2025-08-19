@@ -1,13 +1,12 @@
 import streamlit as st
 import requests
 
-BASE_URL = "http://127.0.0.1:9876"  # FastAPI ka URL
+BASE_URL = "http://127.0.0.1:8000"  # FastAPI ka URL
 
-st.set_page_config(page_title="Myself CRUD with JWT", page_icon="🔐", layout="centered")
-st.title("🔐 Myself CRUD App")
+st.set_page_config(page_title="Users CRUD with JWT", page_icon="🔐", layout="centered")
+st.title("🔐 Users CRUD App")
 st.write("Made with ❤️ by Shaheer Ahmad")
 
-# Session state for token
 if "token" not in st.session_state:
     st.session_state.token = None
 
@@ -18,93 +17,82 @@ if not st.session_state.token:
     st.subheader("🔑 Super Admin Login")
 
     with st.form("login_form"):
-        email = st.text_input("Email", placeholder="Enter your email")
+        username = st.text_input("Username", placeholder="Enter your username")
         password = st.text_input("Password", type="password", placeholder="Enter password")
         submit = st.form_submit_button("Login")
 
         if submit:
-            data = {"username": email, "password": password}
+            data = {"username": username, "password": password}
             try:
-                response = requests.post(f"{BASE_URL}/login", data=data)
+                response = requests.post(f"{BASE_URL}/auth/login", data=data)
                 if response.status_code == 200:
                     st.session_state.token = response.json()["access_token"]
                     st.success("✅ Login successful! You can now use the CRUD features.")
+                    st.rerun()
                 else:
                     st.error("❌ Invalid credentials")
             except Exception as e:
                 st.error(f"Error: {e}")
 else:
-    # =====================
-    # Logout Button
-    # =====================
-    st.sidebar.success("✅ Logged in as Super Admin")
+    st.sidebar.success("✅ Logged in")
     if st.sidebar.button("🚪 Logout"):
         st.session_state.token = None
         st.rerun()
 
-    # =====================
-    # CRUD Tabs
-    # =====================
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     tab1, tab2, tab3, tab4 = st.tabs(["➕ Create", "📖 Read", "✏️ Update", "❌ Delete"])
 
     # CREATE
     with tab1:
-        st.subheader("➕ Create Record")
-        name = st.text_input("Enter name to create")
+        st.subheader("➕ Create User")
+        name = st.text_input("Enter username")
+        password = st.text_input("Enter password")
         if st.button("Create"):
-            if name:
-                response = requests.post(f"{BASE_URL}/myself/", json={"name": name}, headers=headers)
+            if name and password:
+                response = requests.post(f"{BASE_URL}/users/", json={"username": name, "password": password}, headers=headers)
                 if response.status_code == 200:
-                    st.success("✅ Record Created Successfully!")
+                    st.success("✅ User Created Successfully!")
                     st.json(response.json())
                 else:
-                    st.error("❌ Failed to create record")
-            else:
-                st.warning("⚠️ Please enter a name")
+                    st.error("❌ Failed to create user")
 
     # READ
     with tab2:
-        st.subheader("📖 Read Records")
-        if st.button("Load Records"):
-            response = requests.get(f"{BASE_URL}/myself/", headers=headers)
+        st.subheader("📖 Read Users")
+        if st.button("Load Users"):
+            response = requests.get(f"{BASE_URL}/users/", headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 if data:
                     st.table(data)
                 else:
-                    st.info("ℹ️ No records found")
+                    st.info("ℹ️ No users found")
             else:
-                st.error("❌ Failed to fetch records")
+                st.error("❌ Failed to fetch users")
 
     # UPDATE
     with tab3:
-        st.subheader("✏️ Update Record")
-        record_id = st.number_input("Enter Record ID", min_value=1, step=1)
-        new_name = st.text_input("Enter new name for update")
+        st.subheader("✏️ Update User")
+        record_id = st.number_input("Enter User ID", min_value=1, step=1)
+        new_name = st.text_input("Enter new username")
+        new_password = st.text_input("Enter new password")
         if st.button("Update"):
-            if new_name:
-                response = requests.put(
-                    f"{BASE_URL}/myself/",
-                    json={"id": record_id, "name": new_name},
-                    headers=headers
-                )
+            if new_name and new_password:
+                response = requests.put(f"{BASE_URL}/users/{record_id}", json={"username": new_name, "password": new_password}, headers=headers)
                 if response.status_code == 200:
-                    st.success("✅ Record Updated Successfully!")
+                    st.success("✅ User Updated Successfully!")
                     st.json(response.json())
                 else:
-                    st.error("❌ Failed to update record")
-            else:
-                st.warning("⚠️ Please enter a new name")
+                    st.error("❌ Failed to update user")
 
     # DELETE
     with tab4:
-        st.subheader("❌ Delete Record")
-        del_id = st.number_input("Enter Record ID to Delete", min_value=1, step=1)
+        st.subheader("❌ Delete User")
+        del_id = st.number_input("Enter User ID to Delete", min_value=1, step=1)
         if st.button("Delete"):
-            response = requests.delete(f"{BASE_URL}/myself/{del_id}", headers=headers)
+            response = requests.delete(f"{BASE_URL}/users/{del_id}", headers=headers)
             if response.status_code == 200:
-                st.success("✅ Record Deleted Successfully!")
+                st.success("✅ User Deleted Successfully!")
                 st.json(response.json())
             else:
-                st.error("❌ Failed to delete record")
+                st.error("❌ Failed to delete user")
